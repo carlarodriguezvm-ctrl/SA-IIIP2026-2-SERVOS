@@ -18,17 +18,15 @@ else:
     print("PROBANDO EN MODO SIMULACIÓN (Sin Arduino físico)")
     arduino = MagicMock()
     
-    # Función inteligente para simular exactamente lo que devolvería tu Arduino
     def simular_respuesta_arduino(comando_bytes):
         try:
-            # Decodificar los bytes recibidos a texto y limpiar espacios/saltos de línea
+
             comando = comando_bytes.decode('utf-8').strip()
             
             if len(comando) > 1:
                 prefijo = comando[0]
                 valor_str = comando[1:]
                 
-                # Verificar que la parte numérica sea un número válido
                 if valor_str.isdigit():
                     valor = int(valor_str)
                     
@@ -44,9 +42,9 @@ else:
                 else:
                     respuesta = "MOCK: Error: Formato de valor inválido\n"
             else:
-                respuesta = "MOCK: Error: Comando muy corto\n`"
+                respuesta = "MOCK: Error: Comando muy corto\n"
                 
-            # Configurar el mock para que readline() devuelva esta respuesta simulada
+
             arduino.readline.return_value = respuesta.encode('utf-8')
             
         except Exception as e:
@@ -60,7 +58,7 @@ else:
     
 app = ttk.Window(theme=sty.TEMA_VENTANA)
 app.title("Proyecto 2 Servos")
-app.geometry('1150x940')
+app.geometry('1150x760')
 
 style = ttk.Style()
 style.configure(
@@ -87,7 +85,7 @@ def enviar_comando_arduino(prefijo, valor):
     except Exception as e:
         print(f"Error al enviar comando serial: {e}")
 
-#LABEL Y ENTRADA FIJAS (NO VAN A CAMBIAR)
+# LABEL Y ENTRADA FIJAS (NO VAN A CAMBIAR)
 frame_fijo = ttk.Frame(app) 
 titulo = ttk.Label(frame_fijo, text=sty.TEXTO_TITULO, font=sty.FUENTE_TITULO, bootstyle=sty.BOOTSTYLE_TITULO)
 titulo.pack(pady=sty.PAD_TITULO_Y, padx=sty.PAD_X)
@@ -95,15 +93,16 @@ titulo.pack_configure(anchor="center")
 
 seleccion_servo = ttk.Combobox(
     frame_fijo,
-        values=["Continuo", "Posicional"],
-        state="readonly", #hace que no podamos modificar el combobox
-        font=sty.FUENTE_ETIQUETA,
-            )
+    values=["Continuo", "Posicional"],
+    state="readonly", # hace que no podamos modificar el combobox
+    font=sty.FUENTE_ETIQUETA,
+)
 
-#FRAME CONTINUO
+# FRAME CONTINUO
 frame_continuo = ttk.Frame(app)
 continuo_subtitulo = ttk.Label(
-    frame_continuo, font = sty.FUENTE_SUBTITULO, text="Servo Continuo", bootstyle=sty.BOOTSTYLE_TITULO)
+    frame_continuo, font=sty.FUENTE_SUBTITULO, text="Servo Continuo", bootstyle=sty.BOOTSTYLE_TITULO
+)
 continuo_subtitulo.pack(pady=sty.PAD_Y, padx=sty.PAD_X)
 
 lbl_valor_actual_c = ttk.Label(
@@ -133,9 +132,8 @@ def valor_continuo(val):
     entero = int(float(val))
     lbl_valor_actual_c.config(text=f"Valor actual: {entero}")
     enviar_comando_arduino('C', entero)
-    
 
-#FRAME POSICIONAL
+# FRAME POSICIONAL
 frame_posicional = ttk.Frame(app)
 
 posicional_subtitulo = ttk.Label(
@@ -162,6 +160,11 @@ def al_mover_slider(val):
     lbl_valor_actual.config(text=f"Posición actual: {entero}°")
     enviar_comando_arduino('P', entero)
 
+# Función ejecutada al pulsar botones de posición rápida (0, 90, 180)
+def posicionar_slider(val):
+    valor_slider.set(val)
+    al_mover_slider(val)
+
 slide_P = ttk.Scale(
     frame_control_barra, 
     from_=0, 
@@ -173,13 +176,29 @@ slide_P = ttk.Scale(
 )
 slide_P.pack(fill=X, padx=10, pady=5)
 
-# Indicadores(0 y 180)
+# Indicadores (0 y 180)
 frame_marcas = ttk.Frame(frame_control_barra)
 frame_marcas.pack(fill=X, padx=10)
 lbl_min = ttk.Label(frame_marcas, text="0°", font=("Arial", 10, "bold"))
 lbl_min.pack(side=LEFT)
 lbl_max = ttk.Label(frame_marcas, text="180°", font=("Arial", 10, "bold"))
 lbl_max.pack(side=RIGHT)
+
+# Botones iguales que en el continuo
+frame_botones_posicional = ttk.Frame(frame_posicional)
+frame_botones_posicional.pack(anchor="center", pady=sty.PAD_Y)
+
+btn_P0 = ttk.Button(frame_botones_posicional, style='Grande.TButton', text="0", bootstyle=sty.BOOTSTYLE_BOTON,
+                    command=lambda: posicionar_slider(0))
+btn_P0.pack(side=LEFT, padx=sty.PAD_X, pady=sty.PAD_Y)
+
+btn_P90 = ttk.Button(frame_botones_posicional, style='Grande.TButton', text="90", bootstyle=sty.BOOTSTYLE_BOTON,
+                    command=lambda: posicionar_slider(90))
+btn_P90.pack(side=LEFT, padx=sty.PAD_X, pady=sty.PAD_Y)
+
+btn_P180 = ttk.Button(frame_botones_posicional, style='Grande.TButton', text="180", bootstyle=sty.BOOTSTYLE_BOTON,
+                    command=lambda: posicionar_slider(180))
+btn_P180.pack(side=LEFT, padx=sty.PAD_X, pady=sty.PAD_Y)
 
 def cambiar_servo(event=None):
     servo_seleccionado = seleccion_servo.get()
@@ -197,4 +216,5 @@ frame_fijo.pack(pady=sty.PAD_Y, padx=sty.PAD_X)
 app.protocol("WM_DELETE_WINDOW", lambda: (arduino.close() 
                                         if arduino and arduino.is_open 
                                         else None, app.destroy(), sys.exit(0))) 
+
 app.mainloop()
